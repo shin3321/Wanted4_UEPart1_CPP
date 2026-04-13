@@ -21,4 +21,7 @@ public:
 	UStudent();
 
 	virtual void DoLesson() override;
+
+	// 알림을 구독할 함수
+	void GetNotification(const FString& School, const FString& NewCourseInfo);
 };

@@ -7,13 +7,13 @@
 #include "MyGameInstance.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class UEPART1_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
-	
+
 public:
 	UMyGameInstance();
 private:
@@ -23,4 +23,9 @@ private:
 private:
 	UPROPERTY()
 	FString SchoolName;
+
+	// 학사 정보 객체
+	UPROPERTY()
+	TObjectPtr<class UCourseInfo> CourseInfo;
+
 };
