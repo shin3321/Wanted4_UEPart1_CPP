@@ -4,6 +4,8 @@
 #include "MyGameInstance.h"
 #include "Student.h"
 #include "Teacher.h"
+#include "Staff.h"
+#include "Card.h"
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -15,137 +17,61 @@ void UMyGameInstance::Init()
 {
 	Super::Init();
 
-	// 클래스 정보 가져오기
-	UClass* ClassRuntime = GetClass();
-	UClass* ClassCompile = UMyGameInstance::StaticClass();
+	UE_LOG(LogTemp, Log, TEXT("================================="));
 
-	// 어서트.
-	// 꼭 통과해야 하는 코드에 넣음
-	check(ClassRuntime == ClassCompile);
-
-
-
-	// 클래스 이름 출력
-	UE_LOG(LogTemp, Log, TEXT("학교를 담당하는 클래스: %s %s"), *ClassRuntime->GetName(), *ClassCompile->GetName());
-	UE_LOG(LogTemp, Log, TEXT("============================"));
-	//check(ClassRuntime == ClassCompile);
-	//ensure(ClassRuntime != ClassCompile);
-//	ensureMsgf(ClassRuntime != ClassCompile, TEXT("일부러 에러를 발생시킨 코드"));
-
-	UE_LOG(LogTemp, Log, TEXT("학교를 담당하는 클래스 이름: %s"), *ClassRuntime->GetName());
-
-	SchoolName = TEXT("청강문화산업대학교");
-
-	UE_LOG(LogTemp, Log, TEXT("학교 이름: %s"), *SchoolName);
-	UE_LOG(LogTemp, Log, TEXT("학교 이름 기본값: %s"), *GetClass()->GetDefaultObject<UMyGameInstance>()->SchoolName);
-	UE_LOG(LogTemp, Log, TEXT("============================"));
-
-	UStudent* Student = NewObject<UStudent>();
-	UTeacher* Teacher = NewObject<UTeacher>();
-
-	Student->SetName(TEXT("학생1"));
-	UE_LOG(LogTemp, Log, TEXT("새로운 학생 이름: %s"), *Student->GetName());
-
-	// 언리얼의 리플렉션을 활용해 프로퍼티 정보 설정 및 가져오기
-	//런타임에 가져오기
-	UTeacher::StaticClass()->FindPropertyByName(TEXT("Name"));
-	//컴파일 타임에 가져오기 
-	FProperty* NameProp = Teacher->GetClass()->FindPropertyByName(TEXT("Name"));
-	if (NameProp)
+	// TArray는 언리얼 엔진이 지원하는 동적 배열
+	// STL의 std::vector와 동일한 기능 제공
+	// 언리얼 오브젝트에 특화된 동적 배열
+	TArray<UPerson*> Persons =
 	{
-		FString CurrentTeacherName;
-		NameProp->GetValue_InContainer(Teacher, &CurrentTeacherName);
-		UE_LOG(LogTemp, Log, TEXT("현재 선생님 이름: %s"), *CurrentTeacherName);
+		NewObject<UStudent>(),
+		NewObject<UTeacher>(),
+		NewObject<UStaff>()
+	};
 
-		//리플렉션을 활용해 프로퍼티에 새로운 값 저장 
-		FString NewTeacherName(TEXT("로니"));
-		NameProp->SetValue_InContainer(Teacher, &NewTeacherName);
-		UE_LOG(LogTemp, Log, TEXT("새로운 선생님 이름: %s"), *Teacher->GetName());
+	// 이름 출력
+	for (const UPerson* Person : Persons)
+	{
+		UE_LOG(LogTemp, Log, TEXT("구성원 이름: %s"), *Person->GetName());
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("================================="));
 
-	// 함수 호출
-	UFunction* DoLessonFunc = Teacher->GetClass()->FindFunctionByName(TEXT("DoLesson"));
-	if (DoLessonFunc)
+	for (UPerson* Person : Persons)
 	{
-		Teacher->ProcessEvent(DoLessonFunc, nullptr);
+		// 인터페이스로 형변환
+		// 다운 캐스팅 (위험한 형변환 - RTTI 고려해야 함)
+		ILessonInterface* LessonInterface = Cast<ILessonInterface>(Person);
+		if (LessonInterface)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s는 수업에 참여할 수 있습니다"), *Person->GetName());
+			LessonInterface->DoLesson();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s는 수업에 참여할 수 없습니다"), *Person->GetName());
+		}
+	}
+	UE_LOG(LogTemp, Log, TEXT("================================="));
+
+	for (const auto Person : Persons)
+	{
+		// 카드 가져오기
+		const UCard* OwnCard = Person->GetCard();
+
+		// 어서트
+		ensureAlways(OwnCard);
+
+		//UE_LOG(LogTemp, Log, TEXT("%s님이 소유한 카드 종류: %d"), *Person->GetName(), OwnCard->GetCardType());
+
+		// 열거형의 문자열 값 가져오기
+		const UEnum* CardEnumType = FindObject<UEnum>(nullptr, TEXT("/Script/UEPart1.ECardType"));
+		if (CardEnumType)
+		{
+			FString CardMetaData = CardEnumType->GetDisplayNameTextByValue((int64)OwnCard->GetCardType()).ToString();
+			UE_LOG(LogTemp, Log, TEXT("%s님이 소유한 카드 종류: %s"), *Person->GetName(), *CardMetaData);
+
+		}
 	}
 
-	////로그 출력
-	//UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("Hello Unreal"));
-
-	////TChar | FString
-	//TCHAR LogCharArray[] = TEXT("Hello Unreal2");
-
-	////UE_LOG 함수
-	//// 로그 카테고리(타입) | 로그 수준 (Log, Warning, Error) | 포맷(서식) - 출력할 값의 타입
-	////가변 인자: 포맷에 지정한 타입에 알맞은 값을 전달
-	//UE_LOG(LogTemp, Log, TEXT("%s"), LogCharArray);
-
-	//FString LogCharString = LogCharArray;
-	//UE_LOG(LogTemp, Log, TEXT("%s"), *LogCharString);
-
-	////FSTring에서 TCHAR 포인터를 가져오는 방법
-	//const TCHAR* LogCharPtr = *LogCharString;
-	//TCHAR* LogCharDataPtr = LogCharString.GetCharArray().GetData();
-
-	////문자열 복사
-	//TCHAR LogCharArrayWithSize[100] = {};
-	//FCString::Strcpy(LogCharArrayWithSize, LogCharString.Len(), *LogCharString);
-
-	////복사된 문자열 출력
-	//UE_LOG(LogTemp, Log, TEXT("%s"), LogCharArrayWithSize);
-
-
-	////문자열 자르기
-	//if (LogCharString.Contains(TEXT("unreal"), ESearchCase::IgnoreCase))
-	//{
-	//	//시작 문자열 검색
-	//	int32 Index = LogCharString.Find(TEXT("unreal"), ESearchCase::IgnoreCase);
-
-	//	FString EndString = LogCharString.Mid(Index);
-
-	//	UE_LOG(LogTemp, Log, TEXT("EndString: %s"), *EndString);
-	//}
-
-	////문자열 나누기
-	//FString Left, Right;
-	//if (LogCharString.Split(TEXT(" "), &Left, &Right))
-	//{
-	//	UE_LOG(LogTemp, Log, TEXT("Split Result: %s와 %s"), *Left, *Right);
-
-	//}
-
-	////변환 함수
-	//int32 IntValue = 32;
-	//float FloatValue = 3.141592f;
-	//FString FloatIntString
-	//	= FString::Printf(TEXT("Int: %d, Float: %f"), IntValue, FloatValue);
-
-	//FString FloatString = FString::SanitizeFloat(FloatValue);
-	//FString IntString = FString::FromInt(IntValue);
-
-	//UE_LOG(LogTemp, Log, TEXT("%s"), *FloatIntString);
-	//UE_LOG(LogTemp, Log, TEXT("Int: %s, Float: %s"),*IntString,  *FloatString);
-
-	////문자열에서 숫자로 변환
-	//int32 IntValueFromString = FCString::Atoi(*IntString);
-	//float FloataValueFromString = FCString::Atof(*FloatString);
-
-	//UE_LOG(LogTemp, Log, TEXT("Int: %d, Float: %f"), IntValueFromString, FloataValueFromString);
-	//
-	////FName 사용
-	//FName Key1(TEXT("PELVIS"));
-	//FName Key2(TEXT("pelvis"));
-
-	////비교 결과
-	//FString Result = Key1 == Key2 ? TEXT("같음") : TEXT("다름");
-	//UE_LOG(LogTemp, Log, TEXT("FName 비교 결과: %s"), *Result);
-
-	////부하가 큰 경우
-	//for (int i = 0; i < 10000; ++i)
-	//{
-	//	//키 값
-	//	static FName SearchInNamePool = FName(TEXT("pelvis"));
-	//}
 }

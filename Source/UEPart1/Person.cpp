@@ -2,25 +2,14 @@
 
 
 #include "Person.h"
+#include "Card.h"
 
 UPerson::UPerson()
 {
+	// 기본 값 설정
 	Name = TEXT("홍길동");
 	Year = 1;
-}
 
-void UPerson::DoLesson()
-{
-	UE_LOG(LogTemp, Log, TEXT("%s님이 수업에 참여합니다."), *Name);
-}
-
-
-const FString& UPerson::GetName() const
-{
-	return Name;
-}
-
-void UPerson::SetName(const FString& InName)
-{
-	Name = InName;
+	// 카드 객체 생성
+	Card = CreateDefaultSubobject<UCard>(TEXT("NAME_Card"));
 }
