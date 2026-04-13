@@ -23,7 +23,7 @@ void UMyGameInstance::Init()
 	const int32 ArrayNum = 10;
 	TArray<int32> IntArray;
 
-	for (int32 i = 0; i < ArrayNum; ++i)
+	for (int32 i = 1; i <= ArrayNum; ++i)
 	{
 		IntArray.Add(i);
 	}
@@ -66,4 +66,32 @@ void UMyGameInstance::Init()
 	// 알고리즘 활용 - 합계 구하기
 	int32 SumByAlgo = Algo::Accumulate(IntArray, 0);
 	ensureAlways(Sum == SumByAlgo);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("Sum = %d | SumByAlgo: %d | Sum == SumByAlgo: %s"),
+		Sum, SumByAlgo, (Sum == SumByAlgo ? TEXT("True") : TEXT("False"))
+	);
+	// TSet
+	TSet<int32> Int32Set;
+	for (int32 i = 1; i <= ArrayNum; ++i)
+	{
+		Int32Set.Add(i);
+	}
+
+	// 제거
+	Int32Set.Remove(2);
+	Int32Set.Remove(4);
+	Int32Set.Remove(6);
+	Int32Set.Remove(8);
+	Int32Set.Remove(10);
+
+	// 추가
+	Int32Set.Add(2);
+	Int32Set.Add(4);
+	Int32Set.Add(6);
+	Int32Set.Add(8);
+	Int32Set.Add(10);
+
 }
