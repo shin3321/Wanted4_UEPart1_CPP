@@ -7,6 +7,7 @@
 #include "Staff.h"
 #include "Card.h"
 #include "CourseInfo.h"
+#include "Algo/Accumulate.h"
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -18,30 +19,51 @@ void UMyGameInstance::Init()
 {
 	Super::Init();
 
-	UE_LOG(LogTemp, Log, TEXT("================================="));
+	// TArray
+	const int32 ArrayNum = 10;
+	TArray<int32> IntArray;
 
-	// 학사 정보 객체 생성
-	CourseInfo = NewObject<UCourseInfo>(this);
+	for (int32 i = 0; i < ArrayNum; ++i)
+	{
+		IntArray.Add(i);
+	}
 
-	// 3명의 학생 추가
-	UStudent* Student1 = NewObject<UStudent>();
-	Student1->SetName(TEXT("학생1"));
+	// 짝수 제거
+	IntArray.RemoveAll(
+		// [] 캡처 (외부 내용을 람다 안에서 사용할 때 활용) 
+		// () 파라미터
+		// -> 반환형
+		// {} 본문
+		[](int32 Val) -> bool
+		{
+			return Val % 2 == 0;
+		}
+	);
 
-	UStudent* Student2 = NewObject<UStudent>();
-	Student2->SetName(TEXT("학생2"));
+	// 짝수 삽입
+	IntArray += {2, 4, 6, 8, 10 };
 
-	UStudent* Student3 = NewObject<UStudent>();
-	Student3->SetName(TEXT("학생3"));
+	// 비교
+	TArray<int32> IntArrayCompare;
+	int32 CArray[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 10 };
 
-	// 알림에 구독
-	// 객체의 GetNotification 함수를 등록함
-	CourseInfo->OnChanged.AddUObject(Student1, &UStudent::GetNotification);
-	CourseInfo->OnChanged.AddUObject(Student2, &UStudent::GetNotification);
-	CourseInfo->OnChanged.AddUObject(Student3, &UStudent::GetNotification);
+	IntArrayCompare.AddUninitialized(ArrayNum);
 
-	// 변경된 학사 정보 발행
-	CourseInfo->ChangeCourseInfo(SchoolName, TEXT("변경된 학사 정보"));
+	// C 스타일 배열을 TArray에 메모리 복사
+	FMemory::Memcpy(IntArrayCompare.GetData(), CArray, sizeof(int32) * ArrayNum);
 
-	UE_LOG(LogTemp, Log, TEXT("================================="));
 
+	/// 어서트 - 크래시를 발생시키지 않고 출력 로그 창에 오류 메시지 출력
+	ensureAlways(IntArray == IntArrayCompare);
+
+	// 합계
+	int32 Sum = 0;
+	for (const int32& Int32Num : IntArray)
+	{
+		Sum += Int32Num;
+	}
+
+	// 알고리즘 활용 - 합계 구하기
+	int32 SumByAlgo = Algo::Accumulate(IntArray, 0);
+	ensureAlways(Sum == SumByAlgo);
 }
