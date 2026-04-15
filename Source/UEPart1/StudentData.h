@@ -1,39 +1,23 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "StudentData.generated.h"
 
-USTRUCT(BlueprintType, Atomic)
 struct FStudentData
 {
-	GENERATED_BODY()
+	FStudentData() {}
+	FStudentData(int32 InOrder, const FString& InName)
+		:Order(InOrder), Name(InName)
+	{ }
 
-	FStudentData()
+	friend FArchive& operator<<(FArchive& Ar, FStudentData& InStudentData)
 	{
-		Name = TEXT("기본 이름");
-		Order = -1;
+		Ar << InStudentData.Order;
+		Ar << InStudentData.Name;
+		return Ar;
 	}
 
-	FStudentData(const FString& InName, int32 InOrder)
-		:Name(InName), Order(InOrder)
-	{ 
-	}
 
-	//TSet에 사용하기 위한 함수 오버로딩
-	bool operator==(const FStudentData& InOther)const
-	{
-		return Order == InOther.Order 
-			&& Name == InOther.Name;
-	}
+	int32 Order = -1;
+	FString Name = TEXT("홍길동");
 
-	friend FORCEINLINE uint32 GetTypeHash(const FStudentData& InStudentData)
-	{
-		return GetTypeHash(InStudentData.Order);
-	}
-
-	UPROPERTY()
-	FString Name;
-
-	UPROPERTY()
-	int32 Order;
 };

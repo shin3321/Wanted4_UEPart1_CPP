@@ -2,109 +2,72 @@
 
 
 #include "MyGameInstance.h"
+#include "StudentData.h"
 
-// 이름 자동 완성해 주는 함수
-FString MakeRandomName()
+UMyGameInstance::UMyGameInstance()
 {
-	// 3글자
-	TCHAR FirstChar[] = TEXT("김이박최");
-	TCHAR MiddleChar[] = TEXT("상혜지성");
-	TCHAR LastChar[] = TEXT("수은원연");
 
-	// 동적 배열을 사용할 때 가능하다면 재할당을 방지하는 게 좋음
-	TArray<TCHAR> RandArray;
-	RandArray.SetNum(3);
-	RandArray[0] = FirstChar[FMath::RandRange(0, 3)];
-	RandArray[1] = MiddleChar[FMath::RandRange(0, 3)];
-	RandArray[2] = LastChar[FMath::RandRange(0, 3)];
-
-	// 문자열로 변환이 가능하도록 변환
-	return RandArray.GetData();
 }
 
 void UMyGameInstance::Init()
 {
 	Super::Init();
 
-	// 학생 이름 데이터 생성
-	const int32 StudentNum = 300;
-	for (int32 i = 1; i <= StudentNum; ++i)
+	// 구조체 객체 생성
+	FStudentData RawDataSource(23, TEXT("장세윤"));
+
+	// 파일로 저장하기 위한 경로 생성
+	const FString SavePath = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
+
+	// 파일 저장 테스트를 위한 구간
 	{
-		StudentsData.Emplace(FStudentData(MakeRandomName(), i));
+		// 파일 이름
+		const FString RawDataFileName(TEXT("RawData.bin"));
+
+		// 파일 이름을 포함한 최종 경로 저장 경로 + 파일 이름
+		FString RawDataAbsolutePath = FPaths::Combine(SavePath, RawDataFileName);
+
+		// 경로 출력
+		UE_LOG(LogTemp, Log, TEXT("저장할 파일의 전체 경로: %s"), *RawDataAbsolutePath);
+
+		FPaths::MakeStandardFilename(RawDataAbsolutePath);
+
+		UE_LOG(LogTemp, Log, TEXT("변경할 파일의 전체 경로: %s"), *RawDataAbsolutePath);
+
+		// 직렬화 사용해서 저장.
+		// 파일 열기(쓰기 모드로).
+		FArchive* RawFileWriterAr = IFileManager::Get().CreateFileWriter(*RawDataAbsolutePath);
+
+		if (RawFileWriterAr)
+		{
+			// 파일에 기록
+			*RawFileWriterAr << RawDataSource;
+
+
+			// 파일 닫기
+			RawFileWriterAr->Close();
+
+			// 메모리 해제
+			delete RawFileWriterAr;
+			RawFileWriterAr = nullptr;
+
+			FStudentData RawDataDeserialized;
+
+			FArchive* RawFileReaderAr = IFileManager::Get().CreateFileReader(*RawDataAbsolutePath);
+			if (RawFileReaderAr)
+			{
+				// 구조체로 값 전달 (역직렬화)
+				*RawFileReaderAr << RawDataDeserialized;
+
+			// 파일 닫기
+				RawFileReaderAr->Close();
+
+				delete RawFileReaderAr;
+				RawFileReaderAr = nullptr;
+
+				UE_LOG(LogTemp, Log, TEXT("[RawData] 이름: %s, 순번:  %d"), *RawDataDeserialized.Name, RawDataDeserialized.Order);
+
+			}
+		}
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("모든 학생 데이터의 수: %d"), StudentsData.Num());
-
-	// 학생 데이터에서 이름 값만 추출해서 배열에 저장
-	TArray<FString> AllStudentNames;
-	
-	// 알고리즘을 활용해서 이름 값 추출
-	Algo::Transform(StudentsData, AllStudentNames,
-		[](const FStudentData& Val)
-		{
-			return Val.Name;
-		}
-	);
-	UE_LOG(LogTemp, Log, TEXT("모든 학생 이름의 수: %d"), AllStudentNames.Num());
-
-	// 학생 데이터를 TSet으로 변환
-	TSet<FString> AllUniqueNames;
-	Algo::Transform(StudentsData, AllUniqueNames,
-		[](const FStudentData& Val)
-		{
-			return Val.Name;
-		}
-	);
-	UE_LOG(LogTemp, Log, TEXT("중복 없는 학생 이름의 수: %d"), AllUniqueNames.Num());
-
-	// 학생 데이터를 TMap으로 변환
-	Algo::Transform(StudentsData, StudentMap,
-		[](const FStudentData& Val)
-		{
-			return TPair<int32, FString>(Val.Order, Val.Name);
-		}
-	);
-
-	UE_LOG(LogTemp, Log, TEXT("순번에 따른 학생 맵의 데이터 수: %d"), StudentMap.Num());
-
-	// 이름 값을 Key로 하는 맵
-	TMap<FString, int32> StudentsMapByUniqueName;
-	Algo::Transform(StudentsData, StudentsMapByUniqueName,
-		[](const FStudentData& Val)
-		{
-			return TPair<FString,int32>(Val.Name, Val.Order);
-		}
-	);
-
-	UE_LOG(LogTemp, Log, TEXT("이름에 따른 학생 맵의 데이터 수: %d"), StudentsMapByUniqueName.Num());
-
-
-	// 이름 중복을 허용하려는 경우
-	TMultiMap<FString, int32> StudentMapByName;
-
-	Algo::Transform(StudentsData, StudentMapByName,
-		[](const FStudentData& Val)
-		{
-			return TPair<FString, int32>(Val.Name, Val.Order);
-		}
-	);
-	UE_LOG(LogTemp, Log, TEXT("이름 중복 학생 멀티 맵의 데이터 수: %d"), StudentMapByName.Num());
-
-
-	// 검색 
-	const FString TargetName(TEXT("이혜은"));
-	TArray<int32>AllOrders;
-	StudentMapByName.MultiFind(TargetName, AllOrders);
-
-	UE_LOG(LogTemp, Log, TEXT("이름이 %s인 학생 수: % d"), *TargetName, AllOrders.Num());
-
-	// TSet에 구조체 넣어 보기
-	TSet<FStudentData> StudentSet;
-	for (int i = 1; i <= StudentNum; ++i)
-	{
-		StudentSet.Emplace(FStudentData(MakeRandomName(), i));
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("학생 데이터 셋의 수: %d"), StudentSet.Num());
-
 }
